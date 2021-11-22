@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Private data folder
-.data
+.data/
