@@ -1,1 +1,1 @@
-# multiwavelength-cutouts
+# WALLABY Multiwavelength cutouts
