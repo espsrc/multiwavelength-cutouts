@@ -6,8 +6,9 @@ from astropy.table import Table
 from astropy.io import fits
 import requests
 #import time
+import pandas as pd
 from io import StringIO
-
+from tqdm.auto import tqdm
 
 # PanSTARRS: This uses the convenience functions provided by PanSTARRS 
 # here: https://ps1images.stsci.edu/ps1image.html
@@ -114,6 +115,26 @@ def ps1_getimages_bulk(tra, tdec, size=240, filters="grizy", format="fits", imag
     return tab
 
 
+# SkyMapper data are retrieved using their SimpleImageAccess Service. A list
+# of cutout urls can be extracted from the returned table. There seems to be
+# a maximum on the size of the requested cutout. So, this could be an issue
+# for large sources and will require some form of a mosaic
+def skymapper_getcutouts(ra_list, dec_list, size):
+    url_list = []
+    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+        #print(f"Retrieving for RA = {ra}, Dec = {dec}")
+        query_url = "https://api.skymapper.nci.org.au/public/siap/dr2/query?POS={},{}&SIZE={}&FORMAT=image/fits&BAND=u,v,g,r,i,z&INTERSECT=center&RESPONSEFORMAT=CSV".format(ra,dec,size)
+        sm_table = pd.read_csv(query_url,delimiter=',',error_bad_lines = False)
+        available_bands = list(sm_table['band'].unique())
+        target_url = []
+        for band in available_bands:
+            sm_table_band = sm_table[sm_table['band']==band]
+            sm_table_max_exptime = sm_table_band[(sm_table_band['exptime'] == sm_table_band['exptime'].max())]
+            sm_table_max_size = sm_table_max_exptime[(sm_table_max_exptime['size'] == sm_table_max_exptime['size'].max())]
+            target_url.append(sm_table_max_size['get_fits'].values[0])
+        #print(f"Here are the urls retrieved so far = {target_url}")
+        url_list.append(target_url)
+    return url_list
 # WISE, 2MASS, AND GALEX data are retrieved from the hips2fits service
 # provided by CDS: https://alasky.u-strasbg.fr/hips-image-services/hips2fits
 # These data come with a slightly different initial scaling. However, during
@@ -121,5 +142,39 @@ def ps1_getimages_bulk(tra, tdec, size=240, filters="grizy", format="fits", imag
 # identical (<5% difference).
 #
 # WISE pixel scale is 1.37499998090796 arcseconds/pixel
+# unWISE pixel scale is ~2.75 arcseconds/pixels
 # 2MASS pixel scale is 1.0000000242 arcseconds/pixel
 # GALEX pixel scale is 1.5 arcseconds/pixel
+
+def unwise_cutouts(ra_list, dec_list, size):
+    unwise_pix_scale = 2.75
+    width = height = int(size*3600/unwise_pix_scale)
+    fov = size/60.
+    url_list = []
+    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+        #print(f"Retrieving unWISE cutouts for RA = {ra}, Dec = {dec}")
+        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FP%2FunWISE%2Fcolor-W2-W1W2-W1&width={width}&height={height}&fov={size}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
+        url_list.append(query_url)
+    return url_list
+
+def twomass_cutouts(ra_list, dec_list, size):
+    twomass_pix_scale = 1.0000000242
+    width = height = int(size*3600/twomass_pix_scale)
+    fov = size/60.
+    url_list = []
+    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+        #print(f"Retrieving 2MASS cutouts for RA = {ra}, Dec = {dec}")
+        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FP%2F2MASS%2Fcolor&width={width}&height={height}&fov={size}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
+        url_list.append(query_url)
+    return url_list
+
+def galex_cutouts(ra_list, dec_list, size):
+    galex_pix_scale = 1.5
+    width = height = int(size*3600/galex_pix_scale)
+    fov = size/60.
+    url_list = []
+    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+        #print(f"Retrieving GALEX cutouts for RA = {ra}, Dec = {dec}")
+        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FGALEXGR6%2FAIS%2Fcolor&width={width}&height={height}&fov={size}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
+        url_list.append(query_url)
+    return url_list
