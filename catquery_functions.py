@@ -10,7 +10,7 @@ import multiprocessing as mp
 import time
 import itertools
 
-'''
+#'''
 ###################################################
 ###################### NED ########################
 ###################################################
@@ -149,18 +149,7 @@ df_columns = ['wallaby_id','delta_velocity_flag','delta_velocity','No.', 'Object
                  'Redshift', 'Redshift Flag', 'Magnitude and Filter', 'Separation',\
                  'References', 'Notes', 'Photometry Points', 'Positions',\
                  'Redshift Points', 'Diameter Points', 'Associations']
-wall = pd.read_csv('ngc5044_dr1_catalog.csv')#'subsample.csv')
-wall['velocity'] = 299792.458*((1420405751.768 - wall.freq)/wall.freq)
-wall = pd.concat([wall, wall, wall, wall, wall, wall, wall, wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall])
-#wall = wall[wall.name == 'WALLABY J134539-240853']
-start_time = time.time()
-queries = mp.Pool(4).starmap(nedqueryandcheck_list, zip(wall.name, wall.ra, wall.dec, wall.velocity))
-#queries_stacked = pd.concat(queries)
-queries_stacked = pd.DataFrame(data=queries, columns =df_columns)
-print(queries_stacked.head())
-print(time.time() - start_time)
-queries_stacked.to_csv('ned_querytest_list.csv',index=False)
-'''
+#'''
 
 
 
@@ -298,21 +287,3 @@ df_columns = ['wallaby_id', 'delta_velocity_flag', 'delta_velocity', 'objID', 'r
                     'modelMag_u', 'modelMag_g', 'modelMag_r', 'modelMag_i', 'modelMag_z', 'modelMagErr_u',\
                     'modelMagErr_g', 'modelMagErr_r', 'modelMagErr_i', 'modelMagErr_z']#, 'z', 'zErr']
 
-#wall = pd.read_csv('ngc5044_dr1_catalog.csv',nrows=2)#'subsample.csv')
-#wall['velocity'] = 299792.458*((1420405751.768 - wall.freq)/wall.freq)
-#wall = pd.concat([wall, wall, wall, wall, wall, wall, wall, wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall,wall])
-#wall = wall[wall.name == 'WALLABY J134539-240853']
-wall_name = ['test1', 'test2', 'test3', 'test4']
-wall_ra = [152.02, 150.03, 150.04, 150.05]
-wall_dec = [20.02, 20.03, 20.04, 20.05]
-wall_velo = [1000,1000,1000,1000]
-
-start_time = time.time()
-#queries = sdssqueryandcheck(wall.name,wall.ra,wall.dec,wall.velocity)
-queries = mp.Pool(4).starmap(sdssqueryandcheck, zip(wall_name, wall_ra, wall_dec, wall_velo))
-queries_stacked = pd.concat(queries,ignore_index=True)
-#queries_stacked = pd.DataFrame(data=queries, columns =df_columns)
-print(queries_stacked.head())
-#print()
-print(time.time() - start_time)
-queries_stacked.to_csv('sdss_querytest_df.csv',index=False)
