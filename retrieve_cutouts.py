@@ -57,7 +57,7 @@ def ps1_geturl(ra, dec, size=240, output_size=None, filters="grizy", format="jpg
         url = url + "&output_size={}".format(output_size)
     # sort filters from red to blue
     flist = ["yzirg".find(x) for x in table['filter']]
-    table = table[numpy.argsort(flist)]
+    table = table[np.argsort(flist)]
     if color:
         if len(table) > 3:
             # pick 3 filters
