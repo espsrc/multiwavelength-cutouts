@@ -17,7 +17,7 @@ import db_functions as db_func
 import catquery_functions as cqf
 
 
-
+###UNCOMMENT ON FIRST RUN OF mwcutouts.py
 #db_func.create_wallaby_mw_tables()
 
 print('*'*10+'\n'+'*'*10+"\nREADING IN TABLES\n"+'*'*10+'\n'+'*'*10)
