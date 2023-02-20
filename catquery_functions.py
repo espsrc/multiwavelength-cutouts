@@ -360,29 +360,23 @@ def cross_match_gswlc(gswlc_df, wallaby_df):
 	match_dist_arcsec = match_dist_deg.arcsecond
 	
 	distance_mask = np.where(match_dist_arcsec < 30)
-	#print(distance_mask)
+
 	gswlc_idx_masked = gswlc_idx[distance_mask]
 	match_dist_arcsec_masked = match_dist_arcsec[distance_mask]
-	#print(match_dist_arcsec_masked)
+
 	
 	
 	wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[distance_mask]
 	gswlc_velo = gswlc_df.velo.to_numpy()[gswlc_idx_masked]
 	
 	delta_velo = np.abs(wallaby_velo - gswlc_velo)
-	#print(delta_velo)
-	velo_mask = np.where(delta_velo < 150)
-	#print(velo_mask[0])
-	distance_velo_mask = distance_mask[0][velo_mask[0]]
-	#print(distance_velo_mask)
-	gswlc_idx_masked_velo_masked = gswlc_idx_masked[velo_mask[0]]
-	#print(gswlc_idx_masked_velo_masked)
-	
 
-	#print(len(distance_mask[0]))
-	#print(len(velo_mask[0]))
-	#print(len(distance_velo_mask))
-	#print(len(gswlc_idx_masked_velo_masked))
+	velo_mask = np.where(delta_velo < 150)
+
+	distance_velo_mask = distance_mask[0][velo_mask[0]]
+
+	gswlc_idx_masked_velo_masked = gswlc_idx_masked[velo_mask[0]]
+
 	
 	wallaby_name_masked = wallaby_df.name.str.replace(r"\'",'',regex=True).iloc[distance_velo_mask]
 	print(wallaby_name_masked)
