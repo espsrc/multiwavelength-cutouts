@@ -8,7 +8,7 @@ c = conn.cursor()
 def create_wallaby_mw_tables():
     with conn:
         table_exists_check = c.execute("""SELECT * 
-                        FROM sqlite_schema 
+                        FROM sqlite_master 
                         WHERE type='table'"""
                         )
         if table_exists_check == 0:
