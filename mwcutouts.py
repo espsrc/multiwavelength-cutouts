@@ -18,7 +18,7 @@ import catquery_functions as cqf
 
 
 
-db_func.create_wallaby_mw_tables()
+#db_func.create_wallaby_mw_tables()
 
 print('*'*10+'\n'+'*'*10+"\nREADING IN TABLES\n"+'*'*10+'\n'+'*'*10)
 
