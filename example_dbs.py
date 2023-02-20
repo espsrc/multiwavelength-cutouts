@@ -146,7 +146,7 @@ def insert_example(df, connection):
 		'freq_peak': 'float'})
 	df.to_sql('wallcat',con = connection, if_exists='append',index=False)
 	
-wallaby = pd.read_csv('../ngc5044_dr1_catalog.csv')
+wallaby = pd.read_csv('./ngc5044_dr1_catalog.csv')
 
 wallaby_top10 = wallaby.head(10)
 
