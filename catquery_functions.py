@@ -10,6 +10,19 @@ import multiprocessing as mp
 import time
 import itertools
 
+
+####################################################
+############## Convenience Functions ###############
+####################################################
+
+
+def freq_to_velo(freq):
+	return 299792.458*((1420405751.768 - freq)/freq)
+
+
+
+
+
 #'''
 ###################################################
 ###################### NED ########################
@@ -30,9 +43,12 @@ def nedqueryandcheck_df(name, ra,dec,velo):
         nomatch[0][0] = name
         nomatch[0][1] = 0
         out = pd.DataFrame(data=nomatch,columns=def_columns)
+        out['No.'] = -9999
     else:
         #perform velocity check
         output_df = Table.to_pandas(output_table)
+        print(output_df.shape)
+        #print(len(velo))
         output_match = output_df[np.abs(output_df.Velocity - velo)< 150]
         delta_v = output_df.Velocity - velo
         #output_match['wallaby_id'] = 
@@ -44,20 +60,21 @@ def nedqueryandcheck_df(name, ra,dec,velo):
             #output_match.insert(0, column='wallaby_id', value=name)
             #output_match.insert(1, column='delta_velocity',value=delta_v)
             out = pd.DataFrame(data=nomatch,columns=def_columns)
+            out['No.'] = -9999
         else:
             output_match.insert(0,column='wallaby_id',value=name)
             output_match.insert(1, column='delta_velocity',value=delta_v)
             output_match.insert(1, column='delta_velocity_flag', value=2)
             out = output_match
-
+    
     return out
 
 
 ###The list method seemed to be counterintuitive given that the query region output was in the form
 ###an astropy Table. Deconstructing and reconstructing it doesn't necessarily make much sense. It
-###is marginally faster though.
+###is marginally faster though but it won't be use due to the simplicity of going from pandas to SQL
 
-
+'''
 def listappenddefault(lists,value):
     for li in lists:
             li.append(value)
@@ -181,12 +198,12 @@ def sdssqueryandcheck(name, wall_ra, wall_dec, velo):
     def_columns = [wallaby_id, delta_velocity_flag, delta_velocity, objID, ra, dec, objtype,\
                     modelMag_u, modelMag_g, modelMag_r, modelMag_i, modelMag_z, modelMagErr_u,\
                     modelMagErr_g, modelMagErr_r, modelMagErr_i, modelMagErr_z, z, zErr]
-    #phot_columns = ['objID', 'ra', 'dec', 'type', 'modelMag_u', 'modelMag_g', 'modelMag_r',\
-    #                'modelMag_i', 'modelMag_z', 'modelMagErr_u', 'modelMagErr_g', 'modelMagErr_r',\
-    #                'modelMagErr_i', 'modelMagErr_z']
-    phot_columns = ['objid', 'ra', 'dec', 'type', 'u', 'g', 'r',\
-                    'i', 'z', 'err_u', 'err_g', 'err_r',\
-                    'err_i', 'err_z']
+    phot_columns = ['objID', 'ra', 'dec', 'objtype', 'modelMag_u', 'modelMag_g', 'modelMag_r',\
+                    'modelMag_i', 'modelMag_z', 'modelMagErr_u', 'modelMagErr_g', 'modelMagErr_r',\
+                    'modelMagErr_i', 'modelMagErr_z']
+    #phot_columns = ['objid', 'ra', 'dec', 'type', 'u', 'g', 'r',\
+    #                'i', 'z', 'err_u', 'err_g', 'err_r',\
+    #                'err_i', 'err_z']
     spec_columns = ['z_best', 'zErr']
     names_columns = phot_columns + spec_columns
     total_columns = ['wallaby_id', 'delta_velocity_flag', 'delta_velocity'] + names_columns
@@ -218,7 +235,8 @@ def sdssqueryandcheck(name, wall_ra, wall_dec, velo):
             #output_match.insert(0, column='wallaby_id', value=name)
             #output_match.insert(1, column='delta_velocity',value=delta_v)
             out = pd.DataFrame(data=nomatch,columns=total_columns)
-        
+            out['objID'] = -9999
+
     else:
         #perform velocity check
         if output_table is None:
@@ -229,6 +247,7 @@ def sdssqueryandcheck(name, wall_ra, wall_dec, velo):
             #output_match.insert(0, column='wallaby_id', value=name)
             #output_match.insert(1, column='delta_velocity',value=delta_v)
             out = pd.DataFrame(data=nomatch,columns=total_columns)
+            out['objID'] = -9999
         #print(output_table['objid'])
         else:
             output_df = Table.to_pandas(output_table)
@@ -271,19 +290,113 @@ def sdssqueryandcheck(name, wall_ra, wall_dec, velo):
                 #output_match.insert(0, column='wallaby_id', value=name)
                 #output_match.insert(1, column='delta_velocity',value=delta_v)
                 out = pd.DataFrame(data=nomatch,columns=total_columns)
+                out['objID'] = -9999
             else:
                 output_match.insert(0,column='wallaby_id',value=name)
                 output_match.insert(1, column='delta_velocity',value=delta_v)
                 output_match.insert(1, column='delta_velocity_flag', value=2)
                 out = output_match
         # '''
-    return out         
-    #create output dataframe
-    #out = pd.DataFrame(data = def_columns, columns = str(def_columns))
-    #print(list(itertools.chain(*def_columns)))
-    #return list(itertools.chain(*def_columns))
+    return out
 
-df_columns = ['wallaby_id', 'delta_velocity_flag', 'delta_velocity', 'objID', 'ra', 'dec', 'objtype',\
-                    'modelMag_u', 'modelMag_g', 'modelMag_r', 'modelMag_i', 'modelMag_z', 'modelMagErr_u',\
-                    'modelMagErr_g', 'modelMagErr_r', 'modelMagErr_i', 'modelMagErr_z']#, 'z', 'zErr']
+
+
+###################################################
+############# Astropy Cross Matching ##############
+###################################################
+
+
+def cross_match_6df(sixd_df, wallaby_df):
+	
+	sixd_positions = SkyCoord(ra = sixd_df.RA_deg.to_numpy(), dec = sixd_df.Dec_deg.to_numpy(), unit='deg')
+	wallaby_positions = SkyCoord(ra = wallaby_df.ra.to_numpy(), dec = wallaby_df.dec.to_numpy(), unit='deg')
+	#print(sixd_positions.shape)
+	sixd_idx, match_dist_deg, _ = wallaby_positions.match_to_catalog_sky(sixd_positions)
+	match_dist_arcsec = match_dist_deg.arcsecond
+	
+	distance_mask = np.where(match_dist_arcsec < 30)
+	#print(distance_mask)
+	sixd_idx_masked = sixd_idx[distance_mask]
+	match_dist_arcsec_masked = match_dist_arcsec[distance_mask]
+	#print(match_dist_arcsec_masked)
+	
+	
+	wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[distance_mask]
+	sixd_velo = sixd_df.v_best.to_numpy()[sixd_idx_masked]
+	
+	delta_velo = np.abs(wallaby_velo - sixd_velo)
+	#print(delta_velo)
+	velo_mask = np.where(delta_velo < 150)
+	#print(velo_mask[0])
+	distance_velo_mask = distance_mask[0][velo_mask[0]]
+	#print(distance_velo_mask)
+	sixd_idx_masked_velo_masked = sixd_idx_masked[velo_mask[0]]
+	#print(sixd_idx_masked_velo_masked)
+	
+
+	#print(len(distance_mask[0]))
+	#print(len(velo_mask[0]))
+	#print(len(distance_velo_mask))
+	#print(len(sixd_idx_masked_velo_masked))
+	
+	wallaby_name_masked = wallaby_df.name.str.replace(r"\'",'',regex=True).iloc[distance_velo_mask]
+	#print(wallaby_name_masked)
+	delta_velo_masked = delta_velo[velo_mask]
+	
+	sixd_df_matched = sixd_df.iloc[sixd_idx_masked_velo_masked].copy()
+	sixd_df_matched.insert(0, column='wallaby_id', value = wallaby_name_masked.to_list())
+	sixd_df_matched.insert(1, column='delta_velocity', value = delta_velo_masked)
+	sixd_df_matched.insert(2, column='angular_sep', value = match_dist_arcsec_masked[velo_mask])
+
+	return sixd_df_matched
+
+	
+def cross_match_gswlc(gswlc_df, wallaby_df):
+	
+	gswlc_positions = SkyCoord(ra = gswlc_df.ra.to_numpy(), dec = gswlc_df.dec.to_numpy(), unit='deg')
+	wallaby_positions = SkyCoord(ra = wallaby_df.ra.to_numpy(), dec = wallaby_df.dec.to_numpy(), unit='deg')
+	
+	gswlc_idx, match_dist_deg, _ = wallaby_positions.match_to_catalog_sky(gswlc_positions)
+	match_dist_arcsec = match_dist_deg.arcsecond
+	
+	distance_mask = np.where(match_dist_arcsec < 30)
+	#print(distance_mask)
+	gswlc_idx_masked = gswlc_idx[distance_mask]
+	match_dist_arcsec_masked = match_dist_arcsec[distance_mask]
+	#print(match_dist_arcsec_masked)
+	
+	
+	wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[distance_mask]
+	gswlc_velo = gswlc_df.velo.to_numpy()[gswlc_idx_masked]
+	
+	delta_velo = np.abs(wallaby_velo - gswlc_velo)
+	#print(delta_velo)
+	velo_mask = np.where(delta_velo < 150)
+	#print(velo_mask[0])
+	distance_velo_mask = distance_mask[0][velo_mask[0]]
+	#print(distance_velo_mask)
+	gswlc_idx_masked_velo_masked = gswlc_idx_masked[velo_mask[0]]
+	#print(gswlc_idx_masked_velo_masked)
+	
+
+	#print(len(distance_mask[0]))
+	#print(len(velo_mask[0]))
+	#print(len(distance_velo_mask))
+	#print(len(gswlc_idx_masked_velo_masked))
+	
+	wallaby_name_masked = wallaby_df.name.str.replace(r"\'",'',regex=True).iloc[distance_velo_mask]
+	print(wallaby_name_masked)
+	delta_velo_masked = delta_velo[velo_mask]
+	
+	gswlc_df_matched = gswlc_df.iloc[gswlc_idx_masked_velo_masked].copy()
+	gswlc_df_matched.insert(0, column='wallaby_id', value = wallaby_name_masked.to_list())
+	gswlc_df_matched.insert(1, column='delta_velocity', value = delta_velo_masked)
+	gswlc_df_matched.insert(2, column='angular_sep', value = match_dist_arcsec_masked)
+
+	return gswlc_df_matched
+	
+	
+	
+
+
 

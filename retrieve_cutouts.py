@@ -1,11 +1,11 @@
 ### This script defines functions  from different existing image cutout
 ### services to retrieve images of WALLABY detections
 
-import numpy
+import numpy as np
 from astropy.table import Table
 from astropy.io import fits
 import requests
-#import time
+from functools import reduce
 import pandas as pd
 from io import StringIO
 from tqdm.auto import tqdm
@@ -115,16 +115,32 @@ def ps1_getimages_bulk(tra, tdec, size=240, filters="grizy", format="fits", imag
     return tab
 
 
+def ps1_merge_and_concat(ps1_df, wallaby_df):
+    wall_ps1_merged = wallaby_df.merge(ps1_df, how = 'inner', left_on = 'ra', right_on = 'ra')
+    ps1_urls_concat = wall_ps1_merged.url.groupby(wall_ps1_merged.index//5).agg(', '.join)
+    #print(ps1_urls_concat)
+    wall_names = wall_ps1_merged.name.str.replace(r"\'",'',regex=True).drop_duplicates()
+    #print(wall_names)
+    merged_concat = pd.concat([wall_names.reset_index(drop=True), ps1_urls_concat.reset_index(drop=True)], axis=1)
+    merged_concat.rename(columns={"name": "wallaby_id"}, inplace=True)
+    merged_concat['url'] = ("[" + merged_concat.url + "]")
+    #print(merged_concat)
+    #image_exists_names = name_list[matching_idx]
+    return merged_concat#ps1_df.groupby(ps1_df.index//5).agg(', '.join)
+
+
+
+
 # SkyMapper data are retrieved using their SimpleImageAccess Service. A list
 # of cutout urls can be extracted from the returned table. There seems to be
 # a maximum on the size of the requested cutout. So, this could be an issue
 # for large sources and will require some form of a mosaic
-def skymapper_getcutouts(ra_list, dec_list, size):
+def skymapper_getcutouts(name_list, ra_list, dec_list, size):
     url_list = []
-    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
-        #print(f"Retrieving for RA = {ra}, Dec = {dec}")
-        query_url = "https://api.skymapper.nci.org.au/public/siap/dr2/query?POS={},{}&SIZE={}&FORMAT=image/fits&BAND=u,v,g,r,i,z&INTERSECT=center&RESPONSEFORMAT=CSV".format(ra,dec,size)
-        sm_table = pd.read_csv(query_url,delimiter=',',error_bad_lines = False)
+    image_exists_id = []
+    for (name, ra,dec) in tqdm(zip(name_list, ra_list,dec_list), total=len(ra_list)):
+        query_url = "https://api.skymapper.nci.org.au/public/siap/dr2/query?POS={},{}&SIZE={}&FORMAT=image/fits&BAND=g,r,i,z&INTERSECT=center&RESPONSEFORMAT=CSV".format(ra,dec,size/60.)
+        sm_table = pd.read_csv(query_url,delimiter=',',on_bad_lines='skip')
         available_bands = list(sm_table['band'].unique())
         target_url = []
         for band in available_bands:
@@ -132,9 +148,15 @@ def skymapper_getcutouts(ra_list, dec_list, size):
             sm_table_max_exptime = sm_table_band[(sm_table_band['exptime'] == sm_table_band['exptime'].max())]
             sm_table_max_size = sm_table_max_exptime[(sm_table_max_exptime['size'] == sm_table_max_exptime['size'].max())]
             target_url.append(sm_table_max_size['get_fits'].values[0])
-        #print(f"Here are the urls retrieved so far = {target_url}")
+
         url_list.append(target_url)
-    return url_list
+        image_exists_id.append(name)
+    skymapper_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
+    skymapper_cutout_df['url'] = skymapper_cutout_df.url.astype(str).str.replace(r"\'",'',regex=True)
+    return skymapper_cutout_df
+    
+    
+    
 # WISE, 2MASS, AND GALEX data are retrieved from the hips2fits service
 # provided by CDS: https://alasky.u-strasbg.fr/hips-image-services/hips2fits
 # These data come with a slightly different initial scaling. However, during
@@ -146,35 +168,66 @@ def skymapper_getcutouts(ra_list, dec_list, size):
 # 2MASS pixel scale is 1.0000000242 arcseconds/pixel
 # GALEX pixel scale is 1.5 arcseconds/pixel
 
-def unwise_cutouts(ra_list, dec_list, size):
+def unwise_cutouts(name_list, ra_list, dec_list, size):
     unwise_pix_scale = 2.75
-    width = height = int(size*3600/unwise_pix_scale)
+    width = height = int(size*60/unwise_pix_scale)
     fov = size/60.
     url_list = []
-    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+    image_exists_id = []
+    for (name, ra,dec) in tqdm(zip(name_list, ra_list,dec_list), total=len(ra_list)):
         #print(f"Retrieving unWISE cutouts for RA = {ra}, Dec = {dec}")
-        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FP%2FunWISE%2Fcolor-W2-W1W2-W1&width={width}&height={height}&fov={size}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
+        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FP%2FunWISE%2Fcolor-W2-W1W2-W1&width={width}&height={height}&fov={fov}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
         url_list.append(query_url)
-    return url_list
+        image_exists_id.append(name)
+    unwise_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
+    return unwise_cutout_df
 
-def twomass_cutouts(ra_list, dec_list, size):
+def twomass_cutouts(name_list, ra_list, dec_list, size):
     twomass_pix_scale = 1.0000000242
-    width = height = int(size*3600/twomass_pix_scale)
+    width = height = int(size*60/twomass_pix_scale)
     fov = size/60.
     url_list = []
-    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+    image_exists_id = []
+    for (name, ra, dec) in tqdm(zip(name_list, ra_list, dec_list), total=len(ra_list)):
         #print(f"Retrieving 2MASS cutouts for RA = {ra}, Dec = {dec}")
-        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FP%2F2MASS%2Fcolor&width={width}&height={height}&fov={size}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
+        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FP%2F2MASS%2Fcolor&width={width}&height={height}&fov={fov}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
         url_list.append(query_url)
-    return url_list
+        image_exists_id.append(name)
+    twomass_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
+    return twomass_cutout_df
 
-def galex_cutouts(ra_list, dec_list, size):
+def galex_cutouts(name_list, ra_list, dec_list, size):
     galex_pix_scale = 1.5
-    width = height = int(size*3600/galex_pix_scale)
+    width = height = int(size*60/galex_pix_scale)
     fov = size/60.
     url_list = []
-    for (ra,dec) in tqdm(zip(ra_list,dec_list), total=len(ra_list)):
+    image_exists_id = []
+    for (name, ra, dec) in tqdm(zip(name_list, ra_list, dec_list), total=len(ra_list)):
         #print(f"Retrieving GALEX cutouts for RA = {ra}, Dec = {dec}")
-        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FGALEXGR6%2FAIS%2Fcolor&width={width}&height={height}&fov={size}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
+        query_url = f'https://alasky.u-strasbg.fr/hips-image-services/hips2fits?hips=CDS%2FGALEXGR6%2FAIS%2Fcolor&width={width}&height={height}&fov={fov}&projection=TAN&coordsys=icrs&rotation_angle=0.0&ra={ra}&dec={dec}&format=fits'
         url_list.append(query_url)
-    return url_list
+        image_exists_id.append(name)
+    galex_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
+    return galex_cutout_df
+    
+def ls_cutouts(name_list, ra_list, dec_list, size):
+    ls_pix_scale = 0.262
+    width = height = int(size*60/ls_pix_scale)
+    url_list = []
+    image_exists_id = []
+    for (name, ra, dec) in tqdm(zip(name_list, ra_list, dec_list), total=len(ra_list)):
+        query_url = f'https://www.legacysurvey.org/viewer/cutout.fits?ra={ra}&dec={dec}&layer=ls-dr10&pixscale=0.262&size={width}'
+        url_list.append(query_url)
+        image_exists_id.append(name)
+    ls_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
+    return ls_cutout_df
+    
+def merge_cutout_df(ps1, skymapper, unwise, twomass, galex, ls):
+    merged_mw_cutouts = ps1.merge(skymapper,on='wallaby_id',\
+                                    suffixes=('_ps1','_skymapper')).merge(unwise, on='wallaby_id'\
+                                    ).merge(twomass,on='wallaby_id',suffixes=('_unwise','_twomass')\
+                                    ).merge(galex,on='wallaby_id').merge(ls,on='wallaby_id',\
+                                    suffixes=('_galex','_ls'))
+    merged_mw_cutouts.rename(columns={'url_ps1': 'panstarrs_url', 'url_skymapper': 'skymapper_url', 'url_unwise': 'unwise_url', 'url_twomass': 'twomass_url', 'url_galex': 'galex_url', 'url_ls': 'ls_url'},inplace=True)
+    return merged_mw_cutouts
+    
