@@ -1,5 +1,7 @@
 ### This is the main script that will be run to retrieve cutouts and save
-### them in the current directory
+### them in the current directory.
+###
+### All files will need to be in the same directory.
 
 #Python Packages
 import numpy as np
@@ -34,15 +36,15 @@ wallaby_prev = pd.read_sql('SELECT * from wallaby_mw_image_urls', wallaby_conn)
 new_values_idx = db_func.compare_input_dbs(wallaby_prev,wallaby_cat)
 print(new_values_idx)
 if len(new_values_idx)>0:
-	name_test = wallaby_cat.name.iloc[new_values_idx]    #.head(5).str.replace(r"\'",'',regex=True).to_list()
-	ra_test = wallaby_cat.ra.iloc[new_values_idx]        #.head(5).to_list()#[151.109056583226,151.414463079159]
-	dec_test = wallaby_cat.dec.iloc[new_values_idx]      #.head(5).to_list()#[-28.444156643408,-28.442512016763]
-	velo_test = cqf.freq_to_velo(wallaby_cat.freq.iloc[new_values_idx])       #.head(5)).to_list()
+	name_test = wallaby_cat.name.iloc[new_values_idx]
+	ra_test = wallaby_cat.ra.iloc[new_values_idx]      
+	dec_test = wallaby_cat.dec.iloc[new_values_idx]
+	velo_test = cqf.freq_to_velo(wallaby_cat.freq.iloc[new_values_idx])
 else:
-	name_test = wallaby_cat.name    #.head(5).str.replace(r"\'",'',regex=True).to_list()
-	ra_test = wallaby_cat.ra        #.head(5).to_list()#[151.109056583226,151.414463079159]
-	dec_test = wallaby_cat.dec      #.head(5).to_list()#[-28.444156643408,-28.442512016763]
-	velo_test = cqf.freq_to_velo(wallaby_cat.freq)       #.head(5)).to_list()
+	name_test = wallaby_cat.name
+	ra_test = wallaby_cat.ra
+	dec_test = wallaby_cat.dec
+	velo_test = cqf.freq_to_velo(wallaby_cat.freq)
 size_test = int(680.*4.)
 
 sixd_cat = pd.read_csv('../6dFGSzDR3_cleaned_galaxiesonly.csv')
@@ -89,7 +91,7 @@ ned_df_total = pd.concat(ned_df_list,ignore_index=True)
 sdss_df_total = pd.concat(sdss_df_list, ignore_index=True)
 print(ned_df_total)
 print(sdss_df_total)
-#ned_df_total.to_csv('test.csv',index=False)
+
 
 sixd_df = cqf.cross_match_6df(sixd_cat, wallaby_cat)
 
