@@ -18,7 +18,7 @@ import catquery_functions as cqf
 
 
 ###UNCOMMENT ON FIRST RUN OF mwcutouts.py
-#db_func.create_wallaby_mw_tables()
+db_func.create_wallaby_mw_tables()
 
 print('*'*10+'\n'+'*'*10+"\nREADING IN TABLES\n"+'*'*10+'\n'+'*'*10)
 
@@ -47,8 +47,8 @@ else:
 	velo_test = cqf.freq_to_velo(wallaby_cat.freq)
 size_test = int(680.*4.)
 
-sixd_cat = pd.read_csv('../6dFGSzDR3_cleaned_galaxiesonly.csv')
-gswlc_cat = pd.read_csv('../GSWLC-X2_cleaned.csv')
+sixd_cat = pd.read_csv('./6dFGSzDR3_cleaned_galaxiesonly.csv')
+gswlc_cat = pd.read_csv('./GSWLC-X2_cleaned.csv')
 
 print('*'*10+'\n'+'*'*10+"\nFETCHING IMAGE URLS\n"+'*'*10+'\n'+'*'*10)
 
