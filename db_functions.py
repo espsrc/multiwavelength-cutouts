@@ -7,11 +7,12 @@ c = conn.cursor()
 
 def create_wallaby_mw_tables():
     with conn:
-        table_exists_check = c.execute("""SELECT * 
-                        FROM sqlite_master 
-                        WHERE type='table'"""
+        try:
+            c.execute("""SELECT * 
+                        FROM wallaby_mw_image_urls 
+                        """
                         )
-        if table_exists_check == 0:
+        except:
             print("CREATING TABLES")
             c.execute("""CREATE TABLE wallaby_ned (
                         wallaby_id text,
