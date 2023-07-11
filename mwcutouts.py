@@ -10,6 +10,7 @@ import sqlite3
 import pandas as pd
 import time
 from tqdm.auto import tqdm
+import sys
 
 #Wallaby Packages
 import retrieve_cutouts as ret_cut
@@ -25,7 +26,7 @@ print('*'*10+'\n'+'*'*10+"\nREADING IN TABLES\n"+'*'*10+'\n'+'*'*10)
 
 #To test this example for the first time, the db name should be "ngc5044_example2.db"
 #and on subsequent runs use "ngc5044_example1.db"
-ngc5044_example_conn = sqlite3.connect('ngc5044_example2.db')
+ngc5044_example_conn = sqlite3.connect(sys.argv[1])
 
 
 wallaby_cat = pd.read_sql('SELECT * from wallcat LIMIT 20',ngc5044_example_conn)#pd.read_csv('../subsample.csv')
@@ -47,8 +48,6 @@ else:
 	velo_test = cqf.freq_to_velo(wallaby_cat.freq)
 size_test = int(680.*4.)
 
-sixd_cat = pd.read_csv('./6dFGSzDR3_cleaned_galaxiesonly.csv')
-gswlc_cat = pd.read_csv('./GSWLC-X2_cleaned.csv')
 
 print('*'*10+'\n'+'*'*10+"\nFETCHING IMAGE URLS\n"+'*'*10+'\n'+'*'*10)
 
@@ -92,6 +91,9 @@ sdss_df_total = pd.concat(sdss_df_list, ignore_index=True)
 print(ned_df_total)
 print(sdss_df_total)
 
+
+sixd_cat = pd.read_csv('./6dFGSzDR3_cleaned_galaxiesonly.csv')
+gswlc_cat = pd.read_csv('./GSWLC-X2_cleaned.csv')
 
 sixd_df = cqf.cross_match_6df(sixd_cat, wallaby_cat)
 

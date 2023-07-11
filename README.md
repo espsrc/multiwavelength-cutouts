@@ -22,7 +22,7 @@ Install packages:
 pip install -r requirements.txt
 ```
 
-Examples database creation:
+Examples of database creation:
 
 ```
 python examples_dbs.py
@@ -30,6 +30,18 @@ python examples_dbs.py
 
 It will create a pair of examples of databases populated with data from `ngc5044_dr1_catalog.csv` file. In concrete, `ngc5044_example1.dbp` and `ngc5044_example2.db`, the first one with the all the rows from `ngc5044_dr1_catalog.csv` and the second one with a summary of 10 rows.
 
+# Run multiwavelength cutouts application
+
+To run multiwavelength cutouts to a DB, use the next:
+```
+python mwcutouts.py <PATH_TO_DB>
+```
+
+for example:
+
+```
+python mwcutouts.py ./ngc5044_example2.db
+```
 
 
 _Old text below_
