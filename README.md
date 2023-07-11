@@ -2,11 +2,37 @@
 
 *This repo is still in development.*
 
-To test this on your local machine you'll need the following packages that do not come bundled with your python installation:
-- numpy
-- pandas
-- astropy
-- tqdm
+# Installation and DB setup
+
+Create a Python Virtual Environment and install requirements:
+
+```
+virtualenv venv -p $(which python3)
+```
+
+Activate this environment:
+
+```
+source ./venv/bin/activate
+```
+
+Install packages:
+
+```
+pip install -r requirements.txt
+```
+
+Examples database creation:
+
+```
+python examples_dbs.py
+```
+
+It will create a pair of examples of databases populated with data from `ngc5044_dr1_catalog.csv` file. In concrete, `ngc5044_example1.dbp` and `ngc5044_example2.db`, the first one with the all the rows from `ngc5044_dr1_catalog.csv` and the second one with a summary of 10 rows.
+
+
+
+_Old text below_
 
 Once these are set up, you should be able to replicate the database/table creation and updates with the following steps:
 
