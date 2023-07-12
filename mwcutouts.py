@@ -4,19 +4,34 @@
 ### All files will need to be in the same directory.
 
 #Python Packages
-import numpy as np
-from numpy import timedelta64
 import sqlite3
 import pandas as pd
-import time
-from tqdm.auto import tqdm
 import sys,logging
+import argparse
 
 #Wallaby Packages
 import retrieve_cutouts as ret_cut
 import db_functions as db_func
-import catquery_functions	 as cqf
+import catquery_functions as cqf
 
+
+CLI=argparse.ArgumentParser()
+CLI.add_argument(
+  "--input",  
+  nargs=1, 
+  type=str,
+  default="./ngc5044_example2.db",  
+)
+CLI.add_argument(
+  "--catalogs",
+  nargs="*",
+  type=str, 
+  default=["skymapper","unwise","twomass","galex","ls"],
+)
+
+args = CLI.parse_args()
+inputfile = args.input[0]
+catalogs = args.catalogs
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -27,7 +42,7 @@ logging.info("READING IN TABLES")
 
 #To test this example for the first time, the db name should be "ngc5044_example2.db"
 #and on subsequent runs use "ngc5044_example1.db"
-ngc5044_example_conn = sqlite3.connect(sys.argv[1])
+ngc5044_example_conn = sqlite3.connect(inputfile)
 
 wallaby_cat = pd.read_sql('SELECT * from wallcat LIMIT 20',ngc5044_example_conn)#pd.read_csv('../subsample.csv')
 wallaby_conn = sqlite3.connect('wallaby_mw.db')
@@ -55,28 +70,42 @@ ps1_table = ret_cut.ps1_getimages_bulk(ra_test, dec_test,size_test,filters="griz
 ps1_urls = ret_cut.ps1_merge_and_concat(ps1_table.to_pandas(),wallaby_cat)
 logging.debug(ps1_urls)
 
-logging.info("Retrieving Skymapper Cutouts")
-sm_urls = ret_cut.skymapper_getcutouts(name_test, ra_test,dec_test,10.)
-logging.debug(sm_urls)
+if "skymapper" in catalogs:
+	logging.info("Retrieving Skymapper Cutouts")
+	sm_urls = ret_cut.skymapper_getcutouts(name_test, ra_test,dec_test,10.)
+	logging.debug(sm_urls)
 
-logging.info('Retrieving unWISE Cutouts')
-unwise_urls = ret_cut.unwise_cutouts(name_test, ra_test, dec_test, 10.)
-logging.debug(unwise_urls)
+if "unwise" in catalogs: 
+	logging.info('Retrieving unWISE Cutouts')
+	unwise_urls = ret_cut.unwise_cutouts(name_test, ra_test, dec_test, 10.)
+	logging.debug(unwise_urls)
 
-logging.info('Retrieving 2MASS Cutouts')
-twomass_urls = ret_cut.twomass_cutouts(name_test, ra_test, dec_test, 10.)
-logging.debug(twomass_urls)
+if "twomass" in catalogs:
+	logging.info('Retrieving 2MASS Cutouts')
+	twomass_urls = ret_cut.twomass_cutouts(name_test, ra_test, dec_test, 10.)
+	logging.debug(twomass_urls)
 
-logging.info('Retrieving GALEX Cutouts')
-galex_urls = ret_cut.galex_cutouts(name_test, ra_test, dec_test, 10.)
-logging.debug(galex_urls)
+if "galex" in catalogs:
+	logging.info('Retrieving GALEX Cutouts')
+	galex_urls = ret_cut.galex_cutouts(name_test, ra_test, dec_test, 10.)
+	logging.debug(galex_urls)
 
-logging.info('Retrieving LS-DR10 Cutouts')
-ls_urls = ret_cut.ls_cutouts(name_test, ra_test, dec_test, 10.)
-logging.debug(ls_urls)
+if "ls" in catalogs:
+	logging.info('Retrieving LS-DR10 Cutouts')
+	ls_urls = ret_cut.ls_cutouts(name_test, ra_test, dec_test, 10.)
+	logging.debug(ls_urls)
 
-merged_multi_df = ret_cut.merge_cutout_df(ps1_urls, sm_urls, unwise_urls, twomass_urls, galex_urls, ls_urls)
+emptydf = pd.DataFrame({'wallaby_id': [], 'url':[]})
+
+merged_multi_df = ret_cut.merge_cutout_df(ps1_urls, 
+					  sm_urls      if "skymapper" in catalogs else emptydf, 
+					  unwise_urls  if "unwise" in catalogs else emptydf, 
+					  twomass_urls if "twomass" in catalogs else emptydf,
+					  galex_urls   if "galex" in catalogs else emptydf,
+					  ls_urls      if "ls" in catalogs else emptydf, )
 logging.debug(merged_multi_df)
+
+exit()
 
 logging.info('PERFORMING CROSS-MATCHING')
 
