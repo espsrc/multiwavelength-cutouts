@@ -114,7 +114,7 @@ def ps1_getimages_bulk(tra, tdec, size=240, filters="grizy", format="fits", imag
             for (filename,ra,dec) in zip(tab["filename"],tab["ra"],tab["dec"])]
     return tab
 
-
+# Mege and concantenate 
 def ps1_merge_and_concat(ps1_df, wallaby_df):
     wall_ps1_merged = wallaby_df.merge(ps1_df, how = 'inner', left_on = 'ra', right_on = 'ra')
     ps1_urls_concat = wall_ps1_merged.url.groupby(wall_ps1_merged.index//5).agg(', '.join)
@@ -135,6 +135,7 @@ def ps1_merge_and_concat(ps1_df, wallaby_df):
 # of cutout urls can be extracted from the returned table. There seems to be
 # a maximum on the size of the requested cutout. So, this could be an issue
 # for large sources and will require some form of a mosaic
+
 def skymapper_getcutouts(name_list, ra_list, dec_list, size):
     url_list = []
     image_exists_id = []
@@ -168,6 +169,7 @@ def skymapper_getcutouts(name_list, ra_list, dec_list, size):
 # 2MASS pixel scale is 1.0000000242 arcseconds/pixel
 # GALEX pixel scale is 1.5 arcseconds/pixel
 
+# UnWISE
 def unwise_cutouts(name_list, ra_list, dec_list, size):
     unwise_pix_scale = 2.75
     width = height = int(size*60/unwise_pix_scale)
@@ -182,6 +184,7 @@ def unwise_cutouts(name_list, ra_list, dec_list, size):
     unwise_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
     return unwise_cutout_df
 
+# TwoMass
 def twomass_cutouts(name_list, ra_list, dec_list, size):
     twomass_pix_scale = 1.0000000242
     width = height = int(size*60/twomass_pix_scale)
@@ -196,6 +199,7 @@ def twomass_cutouts(name_list, ra_list, dec_list, size):
     twomass_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
     return twomass_cutout_df
 
+# Galex Survey
 def galex_cutouts(name_list, ra_list, dec_list, size):
     galex_pix_scale = 1.5
     width = height = int(size*60/galex_pix_scale)
@@ -209,7 +213,8 @@ def galex_cutouts(name_list, ra_list, dec_list, size):
         image_exists_id.append(name)
     galex_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
     return galex_cutout_df
-    
+
+# LegacySurvey    
 def ls_cutouts(name_list, ra_list, dec_list, size):
     ls_pix_scale = 0.262
     width = height = int(size*60/ls_pix_scale)
@@ -222,12 +227,29 @@ def ls_cutouts(name_list, ra_list, dec_list, size):
     ls_cutout_df = pd.DataFrame({'wallaby_id': image_exists_id, 'url':url_list})
     return ls_cutout_df
     
+# Merge cutouts from different DFs
 def merge_cutout_df(ps1, skymapper, unwise, twomass, galex, ls):
-    merged_mw_cutouts = ps1.merge(skymapper,on='wallaby_id',\
-                                    suffixes=('_ps1','_skymapper')).merge(unwise, on='wallaby_id'\
-                                    ).merge(twomass,on='wallaby_id',suffixes=('_unwise','_twomass')\
-                                    ).merge(galex,on='wallaby_id').merge(ls,on='wallaby_id',\
-                                    suffixes=('_galex','_ls'))
-    merged_mw_cutouts.rename(columns={'url_ps1': 'panstarrs_url', 'url_skymapper': 'skymapper_url', 'url_unwise': 'unwise_url', 'url_twomass': 'twomass_url', 'url_galex': 'galex_url', 'url_ls': 'ls_url'},inplace=True)
+    
+    merged_mw_cutouts = ps1
+    columns={'url_ps1': 'panstarrs_url'}
+
+    # Entries fofr each Catalog/Survey
+    if not skymapper.empty:
+        merged_mw_cutouts = merged_mw_cutouts.merge(skymapper,on='wallaby_id',suffixes=('_ps1','_skymapper'))
+        columns['url_skymapper']='skymapper_url'
+    if not unwise.empty:
+        merged_mw_cutouts = merged_mw_cutouts.merge(unwise, on='wallaby_id')
+        columns['url_unwise']='unwise_url'
+    if not twomass.empty:
+        merged_mw_cutouts = merged_mw_cutouts.merge(twomass,on='wallaby_id',suffixes=('_unwise','_twomass'))
+        columns['url_twomass']='twomass_url'
+    if not galex.empty:
+        merged_mw_cutouts = merged_mw_cutouts.merge(galex,on='wallaby_id')
+        columns['url_galex']='galex_url'
+    if not ls.empty:
+        merged_mw_cutouts = merged_mw_cutouts.merge(ls,on='wallaby_id',suffixes=('_galex','_ls'))
+        columns['url_ls']='ls_url'
+
+    merged_mw_cutouts.rename(columns=columns,inplace=True)    
     return merged_mw_cutouts
     

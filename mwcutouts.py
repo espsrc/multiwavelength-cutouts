@@ -99,7 +99,7 @@ if "ls" in catalogs:
 	ls_urls = ret_cut.ls_cutouts(name_test, ra_test, dec_test, 10.)
 	logging.debug(ls_urls)
 
-emptydf = pd.DataFrame({'wallaby_id': [], 'url':[]})
+emptydf = pd.DataFrame()
 
 merged_multi_df = ret_cut.merge_cutout_df(ps1_urls, 
 					  sm_urls      if "skymapper" in catalogs else emptydf, 
