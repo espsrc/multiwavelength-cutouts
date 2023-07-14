@@ -14,14 +14,18 @@ import retrieve_cutouts as ret_cut
 import db_functions as db_func
 import catquery_functions as cqf
 
-
+# CLI params and args parser
 CLI=argparse.ArgumentParser()
+
+# Input file
 CLI.add_argument(
   "--input",  
   nargs=1, 
   type=str,
   default="./ngc5044_example2.db",  
 )
+
+# Catalogs
 CLI.add_argument(
   "--catalogs",
   nargs="*",
@@ -36,7 +40,7 @@ catalogs = args.catalogs
 
 logging.basicConfig(level=logging.DEBUG)
 
-###UNCOMMENT ON FIRST RUN OF mwcutouts.py
+# UNCOMMENT ON FIRST RUN OF mwcutouts.py
 db_func.create_wallaby_mw_tables()
 logging.info("READING IN TABLES")
 
@@ -106,7 +110,6 @@ merged_multi_df = ret_cut.merge_cutout_df(ps1_urls,
 logging.debug(merged_multi_df)
 
 exit()
-
 logging.info('PERFORMING CROSS-MATCHING')
 
 ned_df_list = []
