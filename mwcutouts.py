@@ -109,7 +109,6 @@ merged_multi_df = ret_cut.merge_cutout_df(ps1_urls,
 					  ls_urls      if "ls" in catalogs else emptydf, )
 logging.debug(merged_multi_df)
 
-exit()
 logging.info('PERFORMING CROSS-MATCHING')
 
 ned_df_list = []

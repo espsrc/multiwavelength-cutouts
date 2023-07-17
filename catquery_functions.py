@@ -47,7 +47,6 @@ def nedqueryandcheck_df(name, ra,dec,velo):
     else:
         #perform velocity check
         output_df = Table.to_pandas(output_table)
-        print(output_df.shape)
         #print(len(velo))
         output_match = output_df[np.abs(output_df.Velocity - velo)< 150]
         delta_v = output_df.Velocity - velo
