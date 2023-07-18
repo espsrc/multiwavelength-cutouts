@@ -18,6 +18,7 @@ pytz==2023.3
 pyvo==1.4.1
 PyYAML==6.0
 requests==2.31.0
+scipy==1.11.1
 six==1.16.0
 soupsieve==2.4.1
 tqdm==4.65.0

@@ -307,9 +307,11 @@ def sdssqueryandcheck(name, wall_ra, wall_dec, velo):
 
 def cross_match_6df(sixd_df, wallaby_df):	
     sixd_positions = SkyCoord(ra = sixd_df._RAJ2000.to_numpy(), dec = sixd_df._DEJ2000.to_numpy(), unit='deg')
+    logging.info('SIXD positions extracted')
     wallaby_positions = SkyCoord(ra = wallaby_df.ra.to_numpy(), dec = wallaby_df.dec.to_numpy(), unit='deg')
+    logging.info('WALLABY positions extracted')
 
-    logging.info('SixD Positions',sixd_positions)
+    print (sixd_positions)
     
     #print(sixd_positions.shape)
     sixd_idx, match_dist_deg, _ = wallaby_positions.match_to_catalog_sky(sixd_positions)
