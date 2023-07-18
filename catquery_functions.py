@@ -7,7 +7,7 @@ from astropy.table import Table
 from astroquery.ipac.ned import Ned
 from astroquery.sdss import SDSS
 import multiprocessing as mp
-import time
+import time,logging
 import itertools
 
 
@@ -305,49 +305,51 @@ def sdssqueryandcheck(name, wall_ra, wall_dec, velo):
 ###################################################
 
 
-def cross_match_6df(sixd_df, wallaby_df):
+def cross_match_6df(sixd_df, wallaby_df):	
+    sixd_positions = SkyCoord(ra = sixd_df._RAJ2000.to_numpy(), dec = sixd_df._DEJ2000.to_numpy(), unit='deg')
+    wallaby_positions = SkyCoord(ra = wallaby_df.ra.to_numpy(), dec = wallaby_df.dec.to_numpy(), unit='deg')
+
+    logging.info('SixD Positions',sixd_positions)
+    
+    #print(sixd_positions.shape)
+    sixd_idx, match_dist_deg, _ = wallaby_positions.match_to_catalog_sky(sixd_positions)
+    match_dist_arcsec = match_dist_deg.arcsecond
 	
-	sixd_positions = SkyCoord(ra = sixd_df.RA_deg.to_numpy(), dec = sixd_df.Dec_deg.to_numpy(), unit='deg')
-	wallaby_positions = SkyCoord(ra = wallaby_df.ra.to_numpy(), dec = wallaby_df.dec.to_numpy(), unit='deg')
-	#print(sixd_positions.shape)
-	sixd_idx, match_dist_deg, _ = wallaby_positions.match_to_catalog_sky(sixd_positions)
-	match_dist_arcsec = match_dist_deg.arcsecond
-	
-	distance_mask = np.where(match_dist_arcsec < 30)
-	#print(distance_mask)
-	sixd_idx_masked = sixd_idx[distance_mask]
-	match_dist_arcsec_masked = match_dist_arcsec[distance_mask]
-	#print(match_dist_arcsec_masked)
+    distance_mask = np.where(match_dist_arcsec < 30)
+    #print(distance_mask)
+    sixd_idx_masked = sixd_idx[distance_mask]
+    match_dist_arcsec_masked = match_dist_arcsec[distance_mask]
+    #print(match_dist_arcsec_masked)
 	
 	
-	wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[distance_mask]
-	sixd_velo = sixd_df.v_best.to_numpy()[sixd_idx_masked]
+    wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[distance_mask]
+    sixd_velo = sixd_df.v_best.to_numpy()[sixd_idx_masked]
 	
-	delta_velo = np.abs(wallaby_velo - sixd_velo)
-	#print(delta_velo)
-	velo_mask = np.where(delta_velo < 150)
-	#print(velo_mask[0])
-	distance_velo_mask = distance_mask[0][velo_mask[0]]
-	#print(distance_velo_mask)
-	sixd_idx_masked_velo_masked = sixd_idx_masked[velo_mask[0]]
-	#print(sixd_idx_masked_velo_masked)
+    delta_velo = np.abs(wallaby_velo - sixd_velo)
+    #print(delta_velo)
+    velo_mask = np.where(delta_velo < 150)
+    #print(velo_mask[0])
+    distance_velo_mask = distance_mask[0][velo_mask[0]]
+    #print(distance_velo_mask)
+    sixd_idx_masked_velo_masked = sixd_idx_masked[velo_mask[0]]
+    #print(sixd_idx_masked_velo_masked)
 	
 
-	#print(len(distance_mask[0]))
-	#print(len(velo_mask[0]))
-	#print(len(distance_velo_mask))
-	#print(len(sixd_idx_masked_velo_masked))
+    #print(len(distance_mask[0]))
+    #print(len(velo_mask[0]))
+    #print(len(distance_velo_mask))
+    #print(len(sixd_idx_masked_velo_masked))
 	
-	wallaby_name_masked = wallaby_df.name.str.replace(r"\'",'',regex=True).iloc[distance_velo_mask]
-	#print(wallaby_name_masked)
-	delta_velo_masked = delta_velo[velo_mask]
+    wallaby_name_masked = wallaby_df.name.str.replace(r"\'",'',regex=True).iloc[distance_velo_mask]
+    #print(wallaby_name_masked)
+    delta_velo_masked = delta_velo[velo_mask]
 	
-	sixd_df_matched = sixd_df.iloc[sixd_idx_masked_velo_masked].copy()
-	sixd_df_matched.insert(0, column='wallaby_id', value = wallaby_name_masked.to_list())
-	sixd_df_matched.insert(1, column='delta_velocity', value = delta_velo_masked)
-	sixd_df_matched.insert(2, column='angular_sep', value = match_dist_arcsec_masked[velo_mask])
+    sixd_df_matched = sixd_df.iloc[sixd_idx_masked_velo_masked].copy()
+    sixd_df_matched.insert(0, column='wallaby_id', value = wallaby_name_masked.to_list())
+    sixd_df_matched.insert(1, column='delta_velocity', value = delta_velo_masked)
+    sixd_df_matched.insert(2, column='angular_sep', value = match_dist_arcsec_masked[velo_mask])
 
-	return sixd_df_matched
+    return sixd_df_matched
 
 	
 def cross_match_gswlc(gswlc_df, wallaby_df):

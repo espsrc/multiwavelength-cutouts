@@ -14,6 +14,9 @@ import retrieve_cutouts as ret_cut
 import db_functions as db_func
 import catquery_functions as cqf
 
+# AstroQuery Catalogs
+from astroquery.vizier import Vizier
+
 # CLI params and args parser
 CLI=argparse.ArgumentParser()
 
@@ -110,7 +113,6 @@ merged_multi_df = ret_cut.merge_cutout_df(ps1_urls,
 logging.debug(merged_multi_df)
 
 logging.info('PERFORMING CROSS-MATCHING')
-
 ned_df_list = []
 sdss_df_list = []
 for (name, ra, dec, velo) in zip(name_test, ra_test, dec_test, velo_test):
@@ -118,15 +120,15 @@ for (name, ra, dec, velo) in zip(name_test, ra_test, dec_test, velo_test):
 	sdss_df_list.append(cqf.sdssqueryandcheck(name, ra, dec, velo))
 ned_df_total = pd.concat(ned_df_list,ignore_index=True)
 sdss_df_total = pd.concat(sdss_df_list, ignore_index=True)
-print(ned_df_total)
-print(sdss_df_total)
 
 
-sixd_cat = pd.read_csv('./6dFGSzDR3_cleaned_galaxiesonly.csv')
+#sixd_cat = pd.read_csv('./6dFGSzDR3_cleaned_galaxiesonly.csv')
+cat_6dfgs = Vizier(catalog="VII/259/6dfgs",columns=['_RAJ2000', '_DEJ2000','*'],column_filters={"S_G":"<2"}).query_constraints()[0]
+## Moved cat_6dfgs to a Pandas DF, since this function is using this type
+sixd_df = cqf.cross_match_6df(cat_6dfgs.to_pandas(), wallaby_cat)
+
 gswlc_cat = pd.read_csv('./GSWLC-X2_cleaned.csv')
-
-sixd_df = cqf.cross_match_6df(sixd_cat, wallaby_cat)
-gswlc_df = cqf.cross_match_gswlc(gswlc_cat,wallaby_cat)
+gswlc_df = cqf.cross_match_gswlc(gswlc_cat, wallaby_cat)
 
 logging.info('WRITING TO DATABASE TABLES')
 db_func.insert_mw_image_urls(merged_multi_df.astype(str), wallaby_conn)
