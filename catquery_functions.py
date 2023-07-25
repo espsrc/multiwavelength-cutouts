@@ -324,7 +324,9 @@ def cross_match_6df(sixd_df, wallaby_df):
     #print(match_dist_arcsec_masked)
 	
 	
-    wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[distance_mask]
+    wallaby_velo = freq_to_velo(wallaby_df.freq.to_numpy())[    ]
+    print(wallaby_velo)
+    print(sixd_df)
     sixd_velo = sixd_df.v_best.to_numpy()[sixd_idx_masked]
 	
     delta_velo = np.abs(wallaby_velo - sixd_velo)
