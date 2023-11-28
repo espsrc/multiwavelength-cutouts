@@ -1,6 +1,13 @@
-import sqlite3
+import psycopg2
 
-conn = sqlite3.connect('wallaby_mw.db')
+# Update the connection information for PostgreSQL
+conn = psycopg2.connect(
+    database="<db>",
+    user="<user>",
+    password="<password>",
+    host="<host>",
+    port="<port>"
+)
 
 c = conn.cursor()
 
@@ -15,126 +22,126 @@ def create_wallaby_mw_tables():
         except:
             print("CREATING TABLES")
             c.execute("""CREATE TABLE wallaby_ned (
-                        wallaby_id text,
-                        delta_velocity_flag integer,
-                        delta_velocity real,
-                        Number integer,
-                        Object_Name text,
-                        RA real,
-                        DEC real,
-                        Type text,
-                        Velocity real,
-                        Redshift real,
-                        Redshift_Flag integer,
-                        Magnitude_and_Filter text,
-                        Separation real,
-                        Refs text,
-                        Notes text,
-                        Photometry_Points text,
-                        Positions text,
-                        Redshift_Points text,
-                        Diameter_Points text,
-                        Associations text
-                        )""")
+    wallaby_id VARCHAR,
+    delta_velocity_flag INTEGER,
+    delta_velocity REAL,
+    "Number" INTEGER,
+    "Object_Name" VARCHAR,
+    "RA" REAL,
+    "DEC" REAL,
+    "Type" VARCHAR,
+    "Velocity" REAL,
+    "Redshift" REAL,
+    "Redshift_Flag" INTEGER,
+    "Magnitude_and_Filter" VARCHAR,
+    "Separation" REAL,
+    "Refs" VARCHAR,
+    "Notes" VARCHAR,
+    "Photometry_Points" VARCHAR,
+    "Positions" VARCHAR,
+    "Redshift_Points" VARCHAR,
+    "Diameter_Points" VARCHAR,
+    "Associations" VARCHAR
+);""")
 
-            c.execute("""CREATE TABLE wallaby_sdss (
-                        wallaby_id text,
-                        delta_velocity_flag integer,
-                        delta_velocity real,
-                        objID integer,
-                        ra real,
-                        dec real,
-                        objtype text,
-                        modelMag_u real,
-                        modelMag_g real,
-                        modelMag_r real,
-                        modelMag_i real,
-                        modelMag_z real,
-                        modelMagErr_u real,
-                        modelMagErr_g real,
-                        modelMagErr_r real,
-                        modelMagErr_i real,
-                        modelMagErr_z real,
-                        z_best real,
-                        zErr real
-                        )""")
+                c.execute("""CREATE TABLE wallaby_sdss (
+    wallaby_id VARCHAR,
+    delta_velocity_flag INTEGER,
+    delta_velocity REAL,
+    objID INTEGER,
+    ra REAL,
+    dec REAL,
+    objtype VARCHAR,
+    modelMag_u REAL,
+    modelMag_g REAL,
+    modelMag_r REAL,
+    modelMag_i REAL,
+    modelMag_z REAL,
+    modelMagErr_u REAL,
+    modelMagErr_g REAL,
+    modelMagErr_r REAL,
+    modelMagErr_i REAL,
+    modelMagErr_z REAL,
+    z_best REAL,
+    zErr REAL
+);""")
 
-            c.execute(""" CREATE TABLE wallaby_6dF (
-                        wallaby_id text,
-                        delta_velocity real,
-                        angular_sep real,
-                        id text,
-                        ra_hr integer,
-                        ra_min integer,
-                        ra_sec real,
-                        dec_deg integer,
-                        dec_min integer,
-                        dec_sec real,
-                        num_6d_meas integer,
-                        num_fin_meas integer,
-                        b_J real,
-                        progid integer,
-                        r_F real,
-                        sg_class integer,
-                        sum_flags integer,
-                        v_best integer,
-                        v_best_err integer,
-                        v_source integer,
-                        z_qual integer,
-                        gal_lat real,
-                        gal_lon real,
-                        A_V real, 
-                        weight_fib integer,
-                        targid integer,
-                        temp_code text,
-                        z_file text,
-                        specid text,
-                        RA text,
-                        Dec text,
-                        RA_degrees real, 
-                        Dec_degrees real
-                        )""")
+            c.execute("""CREATE TABLE wallaby_6dF (
+    wallaby_id VARCHAR,
+    delta_velocity REAL,
+    angular_sep REAL,
+    id VARCHAR,
+    ra_hr INTEGER,
+    ra_min INTEGER,
+    ra_sec REAL,
+    dec_deg INTEGER,
+    dec_min INTEGER,
+    dec_sec REAL,
+    num_6d_meas INTEGER,
+    num_fin_meas INTEGER,
+    b_J REAL,
+    progid INTEGER,
+    r_F REAL,
+    sg_class INTEGER,
+    sum_flags INTEGER,
+    v_best INTEGER,
+    v_best_err INTEGER,
+    v_source INTEGER,
+    z_qual INTEGER,
+    gal_lat REAL,
+    gal_lon REAL,
+    A_V REAL,
+    weight_fib INTEGER,
+    targid INTEGER,
+    temp_code VARCHAR,
+    z_file VARCHAR,
+    specid VARCHAR,
+    "RA" VARCHAR,
+    "Dec" VARCHAR,
+    RA_degrees REAL,
+    Dec_degrees REAL
+);""")
 
-            c.execute(""" CREATE TABLE wallaby_gswlc(
-                        wallaby_id text,
-                        delta_velocity real,
-                        angular_sep real,
-                        objid real,
-                        glxid real,
-                        plate integer,
-                        mjd integer,
-                        fiberid integer,
-                        ra real,
-                        dec real,
-                        z real,
-                        chi2_sed real,
-                        log_stellar real,
-                        log_stellar_err real,
-                        log_sfr real,
-                        log_sfr_err real,
-                        ext_fuv real,
-                        ext_fuv_err real,
-                        ext_b real,
-                        ext_b_err real,
-                        ext_v real,
-                        ext_v_err real,
-                        f_sed integer,
-                        uv_survey integer,
-                        f_uv integer,
-                        f_midir integer,
-                        f_mgs integer,
-                        velo real
-                        )""")
+            c.execute("""CREATE TABLE wallaby_gswlc (
+    wallaby_id VARCHAR,
+    delta_velocity REAL,
+    angular_sep REAL,
+    objid REAL,
+    glxid REAL,
+    plate INTEGER,
+    mjd INTEGER,
+    fiberid INTEGER,
+    ra REAL,
+    dec REAL,
+    z REAL,
+    chi2_sed REAL,
+    log_stellar REAL,
+    log_stellar_err REAL,
+    log_sfr REAL,
+    log_sfr_err REAL,
+    ext_fuv REAL,
+    ext_fuv_err REAL,
+    ext_b REAL,
+    ext_b_err REAL,
+    ext_v REAL,
+    ext_v_err REAL,
+    f_sed INTEGER,
+    uv_survey INTEGER,
+    f_uv INTEGER,
+    f_midir INTEGER,
+    f_mgs INTEGER,
+    velo REAL
+);""")
 
-            c.execute(""" CREATE TABLE wallaby_mw_image_urls(
-                        wallaby_id text,
-                        panstarrs_url text,
-                        skymapper_url text,
-                        unwise_url text,
-                        twomass_url text,
-                        galex_url text,
-                        ls_url text
-                        )""")
+            c.execute("""CREATE TABLE wallaby_mw_image_urls (
+    wallaby_id VARCHAR,
+    panstarrs_url TEXT,
+    skymapper_url TEXT,
+    unwise_url TEXT,
+    twomass_url TEXT,
+    galex_url TEXT,
+    ls_url TEXT
+);""")
         else:
             print("TABLES EXIST, READY FOR NEW ENTRIES")
 def insert_mw_image_urls(merged_df,connection):
